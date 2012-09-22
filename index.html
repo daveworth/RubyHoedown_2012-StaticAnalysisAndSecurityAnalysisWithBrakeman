@@ -1,17 +1,456 @@
 <head>
   <title></title>
-  <meta content="" name="description" />
-  <meta content="" name="author" />
-  <meta content="width=1024, user-scalable=no" name="viewport" />
+  <meta content="Advanced Static Analysis of Ruby and Security Scanning with Brakeman Scaner" name="description" />
+  <meta content="David Worth - dave@highgroove.com" name="author" />
+  <meta content="width=1024, height=768, user-scalable=no" name="viewport" />
   <script src="js/jquery-1.7.2.min.js"></script>
   <script src="js/modernizr.custom.js"></script>
   <link href="core/deck.core.css" rel="stylesheet" />
   <script src="core/deck.core.js"></script>
-  <link href="RubyHoedown_2012-StaticAnalysisAndSecurityAnalysisWithBrakeman.css" rel="stylesheet" />
+  <link href="extensions/hash/deck.hash.css" rel="stylesheet" />
+  <script src="extensions/hash/deck.hash.js"></script>
+  <link href="extensions/navigation/deck.navigation.css" rel="stylesheet" />
+  <script src="extensions/navigation/deck.navigation.js"></script>
+  <link href="extensions/scale/deck.scale.css" rel="stylesheet" />
+  <script src="extensions/scale/deck.scale.js"></script>
+  <link href="extensions/status/deck.status.css" rel="stylesheet" />
+  <script src="extensions/status/deck.status.js"></script>
+  <link href="themes/style/web-2.0.css" rel="stylesheet" />
+  <link href="css/RubyHoedown_2012-StaticAnalysisAndSecurityAnalysisWithBrakeman.css" rel="stylesheet" />
   <script type="text/javascript">$(function() { $.deck('.slide'); });</script>
 </head>
 <body>
   <article class="deck-container">
+    <section class="slide">
+      <center>
+        <h2>Static Analysis of Ruby</h2>
+        <h2>and</h2>
+        <h2>Security Scanning of Rails Apps with Brakeman</h2>
+      </center>
+      <h4>David Worth - dave@highgroove.com</h4>
+      <img alt="Highgroove Studios" class="hglogo" src="images/highgroove.png" />
+    </section>
+    <section class="slide">
+      <h2>Can I get a definition?</h2>
+      <div class="slide">
+        <blockquote>
+          <p>Static Analysis is the process of reasoning about programs without executing them, but rather through the act of parsing and algorithmically processing them.</p>
+          <p>
+            <cite>Me (since I prefer this definition to The Wiki's)</cite>
+          </p>
+        </blockquote>
+      </div>
+    </section>
+    <section class="slide">
+      <h2>Pop Quiz!</h2>
+      <div class="slide">
+        <h2>What Language is this?</h2>
+        <script src="https://gist.github.com/3666312.js?file=fib.scm"></script>
+      </div>
+      <h3 class="slide">Lisp?</h3>
+      <h3 class="slide">Scheme?</h3>
+      <h3 class="slide">Clojure?</h3>
+      <h3 class="slide">... I would have accepted any.</h3>
+    </section>
+    <section class="slide">
+      <h2>Why (study, learn, like) Lisps?</h2>
+      <h3 class="slide">... because they show that computers are Turing machines.<a href="http://www.flickr.com/photos/ell-r-brown/5118274331/" title="Bletchley Park - Block B - The Bletchley Park Story - Statue of Alan Turing - by Stephen Kettle by ell brown, on Flickr"><img alt="Bletchley Park - Block B - The Bletchley Park Story - Statue of Alan Turing - by Stephen Kettle" height="375" src="http://farm2.staticflickr.com/1424/5118274331_4104ffa06d.jpg" width="500" /></a>
+      </h3>
+      <h3 class="slide">"data" and "code" are indistinguishable in Lisps because they are identically encoded "lists"</h3>
+      <h3 class="slide">the hardcore Lispers in the crowd will call this "homoiconicity"</h3>
+    </section>
+    <section class="slide">
+      <h2>Shellcode </h2>
+      <h3>another great example of our Turing Machines</h3>
+      <script src="https://gist.github.com/3666312.js?file=shellcode_turing_machine.c"></script>
+      <h3 class="slide">but shellcode is definitely not homoiconic either.</h3>
+    </section>
+    <section class="slide">
+      <h2>Ruby as an acceptable Lisp</h2>
+      <h3 class="slide">Apologies to  <a href="http://steve-yegge.blogspot.com/2006/04/lisp-is-not-acceptable-lisp.html">Steve Yegge</a> but... <span class="slide">I posit that Ruby is a perfectly acceptable Lisp.</span>
+      </h3>
+      <h3 class="slide">Even if it lacks some cool Lisp-isms like macros and first-class functions. </h3>
+      <h3 class="slide">Ruby fakes it well with things like <tt>define_method / instance_eval / class_eval / blocks, procs, and lambdas</tt>
+      </h3>
+      <h3 class="slide">and even though it lacks homoiconicity. </h3>
+    </section>
+    <section class="slide">
+      <h2>Abstract Syntax Trees</h2>
+      <h3 class="slide">Without teaching a compilers class...</h3>
+      <a href="http://en.wikipedia.org/wiki/Compilers:_Principles,_Techniques,_and_Tools"><image alt="Purple(?) Dragon Book Cover" src="images/dragon_book.jpg" style="float: right;"></image></a>
+      <ul>
+        <li class="slide">an Abstract Syntax Tree (AST) is an internal representation used to represent a language</li>
+        <li class="slide">used by a compiler as an intermediate representation between your code and the compiled machine code</li>
+        <li class="slide">used by "interpreted"<sup>1</sup> languages like Ruby or Python<sup>2</sup> to instruct the execution environment (virtual machine) how to manipulate its state.</li>
+      </ul>
+      <ol>
+        <li class="slide">These "interpreted" languages pretty much aren't anymore.  Everything executes in a VM, and it's VMs/turtles all the way down.</li>
+        <li class="slide">Python is complicated, has a byte-compiler, and I am out of my comfort zone talking about the nuts and bolts of it as a language.</li>
+      </ol>
+    </section>
+    <section class="slide">
+      <h1>Analyzing Ruby</h1>
+    </section>
+    <section class="slide">
+      <h2>Here's some everyday Ruby:</h2>
+      <script src="https://gist.github.com/3666312.js?file=string_foo_bar_baz_sexp.rb"></script>
+      <h3 class="slide">What the?</h3>
+      <h3 class="slide">Who can tell me what this does?</h3>
+    </section>
+    <section class="slide">
+      <h2>Side by side with the original source it's much clearer what's going on:</h2>
+      <script src="https://gist.github.com/3666312.js?file=string_foo_bar_baz_sexp.rb"></script>
+      <script src="https://gist.github.com/3666312.js?file=string_foo_bar_baz.rb"></script>
+    </section>
+    <section class="slide">
+      <h2>AST Node Types in Ruby<img src="images/gob_meme.jpeg" style="float: right;" />
+      </h2>
+      <h3 class="slide">How does ruby represent the<tt>||= </tt>operator?</h3>
+      <h3 class="slide">It turns out with the <tt>&colon;op_asgn_or </tt>node type so...</h3>
+      <h3 class="slide">You could almost write code with every operator and manually extract the node types by observation</h3>
+      <h3 class="slide">or...</h3>
+    </section>
+    <section class="slide">
+      <h2>Node types in Ruby's AST (con't)</h2>
+      <h3>By reading the Ruby source we can learn about the node types:</h3>
+      <script src="https://gist.github.com/3666312.js?file=node_excerpts.c"></script>
+    </section>
+    <section class="slide">
+      <h2>Lets do something interesting!</h2>
+    </section>
+    <section class="slide">
+      <h2>Find string interpolations using the Ruby Parser gem</h2>
+      <script src="https://gist.github.com/3666312.js?file=ruby_parser_example.rb"></script>
+      <a href="http://www.flickr.com/photos/silvery/2414538926/" title="Where's Waldo in Google Maps? by Si1very, on Flickr"><img alt="Where's Waldo in Google Maps?" height="377" src="http://farm3.staticflickr.com/2252/2414538926_3d80e76f73.jpg" style="float: right;" width="500" /></a>
+    </section>
+    <section class="slide">
+      <h2>Find string interpolations (con't)</h2>
+      <h3>Which gives us our old friend the s-expression</h3>
+      <script src="https://gist.github.com/3666312.js?file=string_foo_bar_baz_sexp.rb"></script>
+      <h3 class="slide">This is an S-Expression... <span class="slide">also known as an array, which represents a tree.</span>
+      </h3>
+      <h3 class="slide">We can simply walk down the tree making decisions based on node types</h3>
+    </section>
+    <section class="slide">
+      <h2>Find string interpolations (con't)</h2>
+      <h3>Walk the AST</h3>
+      <script src="https://gist.github.com/3666312.js?file=find_dstrs.rb"></script>
+    </section>
+    <section class="slide">
+      <h2>Find string interpolations (con't)</h2>
+      <h3>Walk the AST, and we'll get back a list of interpolated strings as s-expressions</h3>
+      <script src="https://gist.github.com/3666312.js?file=dstr_sexp.rb"></script>
+    </section>
+    <section class="slide">
+      <h2>Find string interpolations (con't)</h2>
+      <div>
+        <h4>Walking the tree further to find "interpolation expressions" is very similar and produces</h4>
+        <script src="https://gist.github.com/3666312.js?file=evstr_sexp.rb"></script>
+      </div>
+    </section>
+    <section class="slide">
+      <h2>Find string interpolations (con't)</h2>
+      <div>
+        <h4>Walking the tree further to find "interpolation expressions" is very similar and produces</h4>
+        <script src="https://gist.github.com/3666312.js?file=evstr_sexp.rb"></script>
+      </div>
+      <h3>This is where the actual interpolation occurs</h3>
+      <h3 class="slide">As we can see, we're interpolating the value of the local variable <tt>baz</tt>
+      </h3>
+    </section>
+    <section class="slide">
+      <h2>Better S-Expression Parsing with SexpProcessor</h2>
+      <h3 class="slide">SexpProcessor allows you to write handlers for each node type in the AST</h3>
+    </section>
+    <section class="slide">
+      <h2>Better S-Expression Parsing with SexpProcessor</h2>
+      <h3>SexpProcessor allows you to write handlers for each node in the AST:</h3>
+      <script src="https://gist.github.com/3666312.js?file=simplest_possible_sexp_processor_example.rb"></script>
+    </section>
+    <section class="slide">
+      <h2>Get you a stack</h2>
+      <ol class="bigger slide">
+        <li>Your Tool</li>
+        <li>SexpProcessor</li>
+        <li>RubyParser</li>
+        <li>RACC</li>
+      </ol>
+      <div class="slide">
+        <h3>or...</h3>
+        <pre>source "https://rubygems.org"
+gem 'sexp_processor'</pre>
+      </div>
+    </section>
+    <section class="slide">
+      <h2>"This whole thing is impossible..."</h2>
+      <div class="slide">
+        <h3>Ruby has all sorts of things that get in our way:</h3>
+        <div class="slide">
+          <ul class="bigger">
+            <li class="fixed_width">method_missing</li>
+            <li class="fixed_width">eval</li>
+          </ul>
+        </div>
+      </div>
+      <h3 class="slide">These tools make automatic analysis of all programs very hard...</h3>
+      <h3 class="slide">The good news is we can do "good enough" for lots of tasks.</h3>
+    </section>
+    <section class="slide">
+      <h2>Other cool uses of Static Analysis</h2>
+      <div class="slide">
+        <ul>
+          <li>
+            <a href="http://ruby.sadi.st/flog.html">Flog</a> / <a href="http://ruby.sadi.st/flay.html">Flay</a>
+          </li>
+          <li>
+            <a href="http://brakemanscanner.org/">Brakeman Scanner</a>
+          </li>
+          <li>... and more</li>
+        </ul>
+        <img alt="Ruby - A Programmer's Best Friend" src="images/ruby_logo.gif" />
+      </div>
+    </section>
+    <section class="slide">
+      <h2>Cool Uses of Static Analysis - Flog</h2>
+      <h3>From the README:<pre>"Flog reports the most tortured code in an easy to read pain report. The higher the score, the more pain the code is in."</pre>
+      </h3>
+      <h3 class="slide">Flog relies on static analysis via SexpProcessor</h3>
+    </section>
+    <section class="slide">
+      <h2>Cool Uses of Static Analysis - Flog (con't)</h2>
+      <h3>Flog assigns to each node of the AST various weighted penalties for complexity... <span class="slide"><at>the end of a run the "worst" (most complicated) methods are presented with their scores</at></span>
+      </h3>
+    </section>
+    <section class="slide">
+      <h2>Cool Uses of Static Analysis - Flog (con't)</h2>
+      <script src="https://gist.github.com/3703803.js?file=flog_examples.txt"></script>
+    </section>
+    <section class="slide">
+      <h2>Cool Uses of Static Analysis - Flay</h2>
+      <h3 class="slide">From the README:<pre>"Flay analyzes code for structural similarities. Differences in literal values, variable, class, method names, whitespace, programming style, braces vs do/end, etc are all ignored. Making this totally rad.""</pre>
+      </h3>
+      <h3 class="slide">They mean it.  That is rad.</h3>
+    </section>
+    <section class="slide">
+      <h2>Cool Uses of Static Analysis - Brakeman</h2>
+      <h3>A Static Analysis Security Scanner for Rails Applications</h3>
+    </section>
+    <section class="slide">
+      <h2>Why a security scanner just for Rails Apps?</h2>
+      <h3 class="slide center">Because of this guy:<br /><img alt="Egor" src="images/egor.png" />
+      </h3>
+      <h3 class="slide">Wait... who?</h3>
+      <h4 class="slide">He kinda owned Github* but they were cool about it</h4>
+      <h5 class="slide">oh, and he gained commit access to Rails core but didn't use it for Evil.</h5>
+    </section>
+    <section class="slide">
+      <h2>Types of Security Scanners:</h2>
+      <ul>
+        <li class="slide">
+          <h3>Active Scanners</h3>
+          <p>Active scanners operate on on a running application and attempt to discover and/or exploit vulnerabilities</p>
+          <ul class="slide">
+            <li>
+              <a href="http://code.google.com/p/skipfish/">skipfish</a> by Michael Zalewski</li>
+            <li>
+              <a href="http://w3af.sourceforge.net/">Web Application Attack and Audit Framework (w3af)</a>
+            </li>
+          </ul>
+        </li>
+        <li class="slide">
+          <h3>Static Analysis Scanners</h3>
+          <p>Attempt to discover <strike>features</strike> vulnerabilities by analyzing an application at rest</p>
+          <ul>
+            <li>Brakeman</li>
+            <li>Gaggillions of others, primarily for "static" languages, but not for rails apps!</li>
+          </ul>
+        </li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h1>Introducing Brakeman</h1>
+    </section>
+    <section class="slide">
+      <h2>Brakeman</h2>
+      <h3>History and details:</h3>
+      <ul>
+        <li>Released August 27, 2010 by Justin Collins aka PresidentBeef (@presidentbeef)</li>
+        <li>Under constant development with many contributors from Big Cool Companies</li>
+        <li>Understands Rails 2 and 3 with separate parsers for Ruby 1.8 and 1.9</li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>So what does it do?</h2>
+      <div class="slide">
+        <h3>Finds 0-day in your apps before others do!</h3>
+      </div>
+      <div class="slide">
+        <h3>"Standard" web vulnerabilities</h3>
+        <ul>
+          <li>XSS, CSRF, SQLi</li>
+          <li>User-controlled data (Command Injection, unsafe redirects, dynamic render paths, "dangerous evaluation", file-access)</li>
+          <li>Session and Authentication settings</li>
+        </ul>
+      </div>
+      <div class="slide">
+        <h3>Rails-specific vulnerabilities</h3>
+        <ul>
+          <li>Mass-Assignment (aka the Github vulnerability)</li>
+          <li>Unsafe/insufficient model validations</li>
+        </ul>
+      </div>
+      <div class="slide">
+        <p>Most of these are covered in the Rails Security Guide and at length on the web as well as in the Brakeman docs</p>
+      </div>
+    </section>
+    <section class="slide">
+      <h2>Does it work?</h2>
+      <div class="slide">
+        <h3>YEP!</h3>
+      </div>
+      <div class="slide">
+        <h4>At Highgroove a remote vulnerability was found on first running</h4>
+      </div>
+      <div class="slide">
+        <h4>... and patched 30s later.</h4>
+      </div>
+    </section>
+    <section class="slide">
+      <h2>How do I use it?</h2>
+      <ol>
+        <li>Install the gem<pre>~/rails_app $ gem install brakeman</pre>
+        </li>
+        <li>Run the scanner<pre>~/rails_app $ brakeman
+[Notice] Detected Rails 3 application
+Loading scanner...
+[Notice] Using Ruby 1.9.3. Please make sure this matches the one used to run your Rails application.
+Processing application in /Users/dworth/Documents/my_projects/badapp
+Processing configuration...
+[Notice] Escaping HTML by default
+Processing gems...
+  # ... SNIP ...
+Indexing call sites...
+Running checks in parallel...
+ - CheckBasicAuth
+ - CheckCrossSiteScripting
+ # ... SNIP ...</pre>
+        </li>
+      </ol>
+    </section>
+    <section class="slide">
+      <h2>How do I use it? (con't)</h2>
+      <ol start="3">
+        <li>Take action!  Read the console:<pre>+BRAKEMAN REPORT+
+Application path: /Users/dworth/Documents/my_projects/badapp
+Rails version: 3.2.1
+Generated at 2012-04-11 16:17:02 -0400
+Checks run: BasicAuth, CrossSiteScripting, DefaultRoutes, # ... SNIP ...
+
++SUMMARY+
++---------------------------------------------+
+|          Scanned/Reported           | Total |
++---------------------------------------------+
+| Controllers                         |     2 |
+| Models                              |     1 |
+| Templates                           |     1 |
+| Errors                              |     0 |
+| Security Warnings                   | 2 (1) |
+| Ignored warnings due to annotations |     0 |
++---------------------------------------------+
+
+# ... SNIP ...</pre>
+        </li>
+      </ol>
+    </section>
+    <section class="slide">
+      <h2>How do I use it? (con't)</h2>
+      <ol start="3">
+        <li>Take action! (con't)<ul>
+            <li>output to HTML<pre>-f html -o brakeman_report.html</pre>
+            </li>
+          </ul>
+        </li>
+      </ol>
+    </section>
     <section class="slide"></section>
+    <section class="slide">
+      <h1>Questions?</h1>
+    </section>
+    <section class="slide">
+      <h1>Thank You!</h1>
+    </section>
+    <section class="slide">
+      <h2>References</h2>
+      <ul>
+        <li>
+          <a href="http://blog.rubybestpractices.com/posts/judofyr/sexp-for-rubyists.html">Sexp for Rubyists - Ruby Best Practices </a>
+        </li>
+        <li>
+          <a href="http://patshaughnessy.net/ruby-under-a-microscope">Ruby Under a Microscope - Pat Shaughnessy</a>
+        </li>
+        <li>
+          <a href="https://github.com/seattlerb/ruby2ruby">ruby2ruby</a> / <a href="https://github.com/seattlerb/ruby_parser">ruby_parser</a> / <a href="https://github.com/seattlerb/parsetree">parsetree</a> - All by  <a href="http://zenspider.com/">Ryan Davis</a> at <a href="http://www.seattlerb.org/">Seattle.rb</a>
+        </li>
+        <li>
+          <a href="https://github.com/ruby/ruby/blob/trunk/node.c#L100-886">Ruby's AST Node types</a>
+        </li>
+        <li>
+          <a href="http://mitpress.mit.edu/sicp/">Structure and Interpretation of Computer Programs</a>
+        </li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>Brakeman on the web</h2>
+      <ul>
+        <li>More Info<ul>
+            <li>
+              <a href="http://www.brakemanscanner.org">http://www.brakemanscanner.org</a>
+            </li>
+            <li>
+              <a href="http://github.com/presidentbeef/brakeman">http://github.com/presidentbeef/brakeman</a>
+            </li>
+            <li>
+              <a href="https://twitter.com/#!/brakeman">@brakeman</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <h2>Other Resources</h2>
+      <ul>
+        <li>
+          <a href="http://guides.rubyonrails.org/security.html">Ruby on Rails Security Guide</a>
+        </li>
+        <li>
+          <a href="https://www.owasp.org/index.php/Main_Page">OWASP - The Open Web Application Security Project</a>
+        </li>
+        <li>
+          <a href="https://github.com/blog/1068-public-key-security-vulnerability-and-mitigation">Github's response to Egor's hack</a>
+        </li>
+      </ul>
+    </section>
+    <section class="slide">
+      <h2>Other cool tools using Static Analysis</h2>
+      <h3 class="slide">(Sir Not-Appearing-In-This-Film) <ul>
+          <li>
+            <a href="http://github.com/martinjandrews/roodi">Roodi </a><span class="slide">- "Ruby Object Oriented Design Inferometer" <div class="slide">Cyclomatic complexity checker for Ruby apps <span class="slide">- i.e. the number of "linearly independent" paths through a program's source</span>
+              </div>
+            </span>
+          </li>
+          <li class="slide">
+            <a href="https://github.com/troessner/reek">Reek </a><span class="slide">- a "Code smell detector for Ruby" <div class="slide">Detects: <ul>
+                  <li class="slide">functions with too many parameters</li>
+                  <li class="slide">poor variable naming: <tt>x, y, i, j, k</tt>
+                  </li>
+                  <li class="slide">and more...</li>
+                </ul>
+              </div>
+            </span>
+          </li>
+        </ul>
+      </h3>
+    </section>
+    <p class="deck-navigation">
+      <a href="#"><span class="deck-prev-link" title="Previous">&#8592;</span></a><a href="#"><span class="deck-next-link" title="Next">&#8594;</span></a>
+    </p>
   </article>
 </body>
