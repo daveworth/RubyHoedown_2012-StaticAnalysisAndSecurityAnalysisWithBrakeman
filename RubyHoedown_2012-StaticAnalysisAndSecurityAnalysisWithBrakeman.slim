@@ -44,16 +44,27 @@ body
   /article.deck-container.deck-menu
   article.deck-container
     section.slide
-      h2 Static Analysis of Ruby
-      h2 and Security Scanning of Rails Apps with Brakeman
-      br
+      center
+        h2 Static Analysis of Ruby
+        h2 and
+        h2 Security Scanning of Rails Apps with Brakeman
       h4 David Worth - dave@highgroove.com
       img.hglogo src="images/highgroove.png" alt="Highgroove Studios"
 
     section.slide
-      h2 What Language is that?
+      h2 Can I get a definition?
+      .slide
+        blockquote
+          p Static Analysis is the process of reasoning about programs without executing them, but rather through the act of parsing and algorithmically processing them.
+          p
+            cite Me (since I prefer this definition to The Wiki's)
 
-      script src="https://gist.github.com/3666312.js?file=fib.scm"
+    section.slide
+      h2 Pop Quiz!
+      .slide
+        h2 What Language is this?
+
+        script src="https://gist.github.com/3666312.js?file=fib.scm"
       h3.slide Lisp?
       h3.slide Scheme?
       h3.slide Clojure?
@@ -74,6 +85,7 @@ body
       h2 Shellcode 
       h3 another great example of our Turing Machines
       script src="https://gist.github.com/3666312.js?file=shellcode_turing_machine.c"
+      h3.slide but shellcode is definitely not homoiconic either.
 
     section.slide
       h2 Ruby as an acceptable Lisp
@@ -84,10 +96,10 @@ body
         '  but...
         span.slide I posit that Ruby is a perfectly acceptable Lisp.
       h3.slide
-        'Even if it lacks some cool Lisp-isms like macros.
-        span.slide
-          ' which it fakes it so enough well with things like
-          tt define_method / instance_eval / class_eval
+        ' Even if it lacks some cool Lisp-isms like macros and first-class functions.
+      h3.slide
+        ' Ruby fakes it well with things like
+        tt define_method / instance_eval / class_eval / blocks, procs, and lambdas
       h3.slide
         ' and even though it lacks homoiconicity.
 
@@ -116,14 +128,26 @@ body
         | Who can tell me what this does?
 
     section.slide
-      h2 Side by side...
-      h3 it is much clearer what's going on
+      h2
+        | Side by side with the original source it's much clearer what's going on:
       script src="https://gist.github.com/3666312.js?file=string_foo_bar_baz_sexp.rb"
       script src="https://gist.github.com/3666312.js?file=string_foo_bar_baz.rb"
 
     section.slide
-      h2 Node types in Ruby's AST
-      h3.slide You could almost just write code with every operator and extract the node types manually
+      h2
+        | AST Node Types in Ruby
+        img src="images/gob_meme.jpeg" style="float: right;"
+      /h2 Node types in Ruby's AST
+      h3.slide
+        | How does ruby represent the
+        tt ||= 
+        | operator?
+      h3.slide
+        | It turns out with the 
+        tt &colon;op_asgn_or 
+        | node type so...
+      h3.slide
+        | You could almost write code with every operator and manually extract the node types by observation
       h3.slide or...
 
     section.slide
@@ -132,24 +156,22 @@ body
       script src="https://gist.github.com/3666312.js?file=node_excerpts.c"
 
     section.slide
-      h2 Do something interesting...
+      h2 Lets do something interesting!
 
     section.slide
-      h2 Do something interesting...
-      h3 Find string interpolations using the Ruby Parser gem
+      h2 Find string interpolations using the Ruby Parser gem
       script src="https://gist.github.com/3666312.js?file=ruby_parser_example.rb"
+      a href="http://www.flickr.com/photos/silvery/2414538926/" title="Where's Waldo in Google Maps? by Si1very, on Flickr"
+        img src="http://farm3.staticflickr.com/2252/2414538926_3d80e76f73.jpg" width="500" height="377" alt="Where's Waldo in Google Maps?" style="float: right;"
 
     section.slide
       h2 Find string interpolations (con't)
       h3 Which gives us our old friend the s-expression
       script src="https://gist.github.com/3666312.js?file=string_foo_bar_baz_sexp.rb"
-
-    section.slide
-      h2 Find string interpolations (con't)
       h3.slide
         | This is an S-Expression... 
-        span.slide also known as an array.
-      h3.slide So we can simply walk down the tree making decisions on node types
+        span.slide also known as an array, which represents a tree.
+      h3.slide We can simply walk down the tree making decisions based on node types
 
     section.slide
       h2 Find string interpolations (con't)
@@ -158,7 +180,7 @@ body
 
     section.slide
       h2 Find string interpolations (con't)
-      h4 Walk the AST, and we'll get back a list of interpolated strings as s-expressions
+      h3 Walk the AST, and we'll get back a list of interpolated strings as s-expressions
       script src="https://gist.github.com/3666312.js?file=dstr_sexp.rb"
 
     section.slide
@@ -187,15 +209,32 @@ body
       script src="https://gist.github.com/3666312.js?file=simplest_possible_sexp_processor_example.rb"
 
     section.slide
+      h2 Get you a stack
+      ol.bigger.slide
+        li Your Tool
+        li SexpProcessor
+        li RubyParser
+        li RACC
+      .slide
+        h3 or...
+        pre
+          | source "https://rubygems.org"
+            gem 'sexp_processor'
+
+
+    section.slide
       h2 "This whole thing is impossible..."
 
       div.slide
         h3 Ruby has all sorts of things that get in our way:
-        span.slide
-          h3.fixed_width method_missing
-          h3.fixed_width eval
-      h3.slide These make analysis of every piece of code in their entirety very hard...
-      h3.slide The good news is we can do "good enough" for lots of tasks
+        .slide
+          ul.bigger
+            li.fixed_width method_missing
+            li.fixed_width eval
+      /h3.slide These make analysis of every piece of code in their entirety very hard...
+      h3.slide These tools make automatic analysis of all programs very hard...
+      /h3.slide Imagine trying to prediect the output or side effects of a Ruby REPL!
+      h3.slide The good news is we can do "good enough" for lots of tasks.
 
 
     section.slide
@@ -229,20 +268,20 @@ body
       h2 Cool Uses of Static Analysis - Flog (con't)
       script src="https://gist.github.com/3703803.js?file=flog_examples.txt"
 
-    section.slide
-      h2 Cool Uses of Static Analysis - Flog (con't)
-      h3
-        ' Note: If you look at Flog's source, the author(s) use the 
-        tt Sexp#s 
-        ' method from
-        tt SexpProcessor 
-        ' to return an empty s-expression at the end of each 
-        tt process_* 
-        ' method.
-      h3.slide 
-        | It may take a while to track that down
-        a href="http://www.flickr.com/photos/silvery/2414538926/" title="Where's Waldo in Google Maps? by Si1very, on Flickr"
-          img src="http://farm3.staticflickr.com/2252/2414538926_3d80e76f73.jpg" width="500" height="377" alt="Where's Waldo in Google Maps?" style="float: right;"
+    /section.slide
+      /h2 Cool Uses of Static Analysis - Flog (con't)
+      /h3
+        /' Note: If you look at Flog's source, the author(s) use the 
+        /tt Sexp#s 
+        /' method from
+        /tt SexpProcessor 
+        /' to return an empty s-expression at the end of each 
+        /tt process_* 
+        /' method.
+      /h3.slide 
+        /| It may take a while to track that down
+        /a href="http://www.flickr.com/photos/silvery/2414538926/" title="Where's Waldo in Google Maps? by Si1very, on Flickr"
+          /img src="http://farm3.staticflickr.com/2252/2414538926_3d80e76f73.jpg" width="500" height="377" alt="Where's Waldo in Google Maps?" style="float: right;"
 
     section.slide
       h2 Cool Uses of Static Analysis - Flay
@@ -252,32 +291,7 @@ body
       h3.slide They mean it.  That is rad.
 
     section.slide
-      h2 Other cool tools using Static Analysis
-      h3.slide
-        ' (Sir Not-Appearing-In-This-Film)
-        ul
-          li
-            a href="http://github.com/martinjandrews/roodi" Roodi 
-            span.slide
-              ' - "Ruby Object Oriented Design Inferometer"
-              .slide
-                ' Cyclomatic complexity checker for Ruby apps
-                span.slide - i.e. the number of "linearly independent" paths through a program's source
-          li.slide
-            a href="https://github.com/troessner/reek" Reek 
-            span.slide
-              ' - a "Code smell detector for Ruby"
-              .slide
-                ' Detects:
-                ul
-                  li.slide functions with too many parameters
-                  li.slide
-                    ' poor variable naming:
-                    tt x, y, i, j, k
-                  li.slide and more...
-
-    section.slide
-      h2 Brakeman
+      h2 Cool Uses of Static Analysis - Brakeman
       h3 A Static Analysis Security Scanner for Rails Applications
 
     section.slide
@@ -320,12 +334,8 @@ body
       h3 History and details:
       ul
         li Released August 27, 2010 by Justin Collins aka PresidentBeef (@presidentbeef)
-        li Under very constant development with many contributors
-        li Understands Rails 2 and 3
-        li
-          | Written in Ruby 1.8 compatible syntax for maximum flexibility
-          ul
-            li separate scanners for Ruby 1.8 and 1.9 parsing
+        li Under constant development with many contributors from Big Cool Companies
+        li Understands Rails 2 and 3 with separate parsers for Ruby 1.8 and 1.9
 
     section.slide
       h2 So what does it do?
@@ -341,9 +351,9 @@ body
         h3 Rails-specific vulnerabilities
         ul
           li Mass-Assignment (aka the Github vulnerability)
-          li Unsafe model validators
+          li Unsafe/insufficient model validations
       .slide
-        p All of these are covered in the Rails Security Guide and at length on the web as well as in the Brakeman docs
+        p Most of these are covered in the Rails Security Guide and at length on the web as well as in the Brakeman docs
 
     section.slide
       h2 Does it work?
@@ -415,6 +425,8 @@ body
               pre -f html -o brakeman_report.html
 
     section.slide
+
+    section.slide
       h1 Questions?
 
     section.slide
@@ -425,7 +437,9 @@ body
 
       ul
         li
-          a href="http://blog.rubybestpractices.com/posts/judofyr/sexp-for-rubyists.html" Ruby Best Practices - Sexp for Rubyists
+          a href="http://blog.rubybestpractices.com/posts/judofyr/sexp-for-rubyists.html" Sexp for Rubyists - Ruby Best Practices 
+        li
+          a href="http://patshaughnessy.net/ruby-under-a-microscope" Ruby Under a Microscope - Pat Shaughnessy
         li
           a href="https://github.com/seattlerb/ruby2ruby" ruby2ruby
           '  /
@@ -462,6 +476,30 @@ body
         li
           a href="https://github.com/blog/1068-public-key-security-vulnerability-and-mitigation" Github's response to Egor's hack
 
+    section.slide
+      h2 Other cool tools using Static Analysis
+      h3.slide
+        ' (Sir Not-Appearing-In-This-Film)
+        ul
+          li
+            a href="http://github.com/martinjandrews/roodi" Roodi 
+            span.slide
+              ' - "Ruby Object Oriented Design Inferometer"
+              .slide
+                ' Cyclomatic complexity checker for Ruby apps
+                span.slide - i.e. the number of "linearly independent" paths through a program's source
+          li.slide
+            a href="https://github.com/troessner/reek" Reek 
+            span.slide
+              ' - a "Code smell detector for Ruby"
+              .slide
+                ' Detects:
+                ul
+                  li.slide functions with too many parameters
+                  li.slide
+                    ' poor variable naming:
+                    tt x, y, i, j, k
+                  li.slide and more...
 
     p.deck-navigation
       a href="#"
